@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">PBMR Browser</string>
+    <string name="shortcut_private_tab_short">Private Tab</string>
+    <string name="shortcut_private_tab_long">Open New Private Tab</string>
+    <string name="shortcut_qr_scan_short">Scan QR</string>
+    <string name="shortcut_qr_scan_long">Scan QR Code</string>
+    <string name="shortcut_fire_burn_short">Fire Burner</string>
+    <string name="shortcut_fire_burn_long">Burn Data &amp; Close</string>
+    <string name="quick_tile_label">PBMR Private Tab</string>
+</resources>

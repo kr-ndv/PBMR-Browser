@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="shortcut_private_tab"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher_round"
+        android:shortcutShortLabel="@string/shortcut_private_tab_short"
+        android:shortcutLongLabel="@string/shortcut_private_tab_long">
+        <intent
+            android:action="com.pbmr.browser.ACTION_NEW_PRIVATE_TAB"
+            android:targetPackage="com.pbmr.browser"
+            android:targetClass="com.pbmr.browser.MainActivity" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_qr_scan"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher_round"
+        android:shortcutShortLabel="@string/shortcut_qr_scan_short"
+        android:shortcutLongLabel="@string/shortcut_qr_scan_long">
+        <intent
+            android:action="com.pbmr.browser.ACTION_SCAN_QR"
+            android:targetPackage="com.pbmr.browser"
+            android:targetClass="com.pbmr.browser.MainActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_fire_burn"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher_round"
+        android:shortcutShortLabel="@string/shortcut_fire_burn_short"
+        android:shortcutLongLabel="@string/shortcut_fire_burn_long">
+        <intent
+            android:action="com.pbmr.browser.ACTION_FIRE_BURN"
+            android:targetPackage="com.pbmr.browser"
+            android:targetClass="com.pbmr.browser.MainActivity" />
+    </shortcut>
+</shortcuts>

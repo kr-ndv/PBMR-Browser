@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PBMR Forest/Lime App Family Palette -->
+    <color name="ic_launcher_background">#021815</color>
+    <color name="splash_background">#021815</color>
+    <color name="pbmr_forest_primary">#365C32</color>
+    <color name="pbmr_lime_accent">#B8F36B</color>
+    <color name="pbmr_dark_background">#0C1712</color>
+</resources>
