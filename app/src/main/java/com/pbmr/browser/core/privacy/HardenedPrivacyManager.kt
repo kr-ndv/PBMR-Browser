@@ -105,7 +105,6 @@ class HardenedPrivacyManager(private val context: Context) {
         if (dohUri.isNotBlank()) {
             // GeckoView provides DNS over HTTPS through network settings
             // ECH (Encrypted Client Hello) is enabled alongside secure DoH
-            settings.configFilePath = null // Custom prefs applied cleanly
         }
     }
 }

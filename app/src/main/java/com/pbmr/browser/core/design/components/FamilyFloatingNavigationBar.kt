@@ -92,7 +92,7 @@ fun FamilyFloatingNavigationBar(
             // Sliding Active Pill Indicator
             val indicatorOffset by animateDpAsState(
                 targetValue = tabWidth * selectedIndex,
-                animationSpec = FamilyMotion.tabSwitchSpring,
+                animationSpec = FamilyMotion.tabSwitchDpSpring,
                 label = "NavIndicatorOffset"
             )
 

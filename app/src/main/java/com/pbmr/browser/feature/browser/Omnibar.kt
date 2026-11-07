@@ -30,6 +30,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,9 +38,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.pbmr.browser.core.design.components.FamilySquigglyProgress
 import com.pbmr.browser.core.design.theme.FamilyRadii
@@ -68,7 +73,27 @@ fun Omnibar(
     modifier: Modifier = Modifier
 ) {
     var isEditing by remember { mutableStateOf(false) }
-    var textInput by remember(url) { mutableStateOf(if (url == "about:blank") "" else url) }
+    var textFieldValue by remember {
+        mutableStateOf(TextFieldValue(if (url == "about:blank") "" else url))
+    }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(url) {
+        if (!isEditing) {
+            textFieldValue = TextFieldValue(if (url == "about:blank") "" else url)
+        }
+    }
+
+    LaunchedEffect(isEditing) {
+        if (isEditing) {
+            val text = if (url == "about:blank") "" else url
+            textFieldValue = TextFieldValue(
+                text = text,
+                selection = TextRange(0, text.length)
+            )
+            focusRequester.requestFocus()
+        }
+    }
 
     Column(
         modifier = modifier
@@ -97,29 +122,21 @@ fun Omnibar(
                 .padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Profile indicator pill
+            // Profile indicator pill (Icon only)
             Box(
                 modifier = Modifier
                     .clip(FamilyRadii.FloatingPill)
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                     .clickable(onClick = onProfileClick)
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Profile",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = profileName.take(4),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Profile: $profileName",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
             }
 
             Spacer(modifier = Modifier.width(6.dp))
@@ -172,14 +189,18 @@ fun Omnibar(
 
             // URL or Search Query Input
             Box(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { isEditing = true },
                 contentAlignment = Alignment.CenterStart
             ) {
                 if (isEditing) {
                     BasicTextField(
-                        value = textInput,
-                        onValueChange = { textInput = it },
-                        modifier = Modifier.fillMaxWidth(),
+                        value = textFieldValue,
+                        onValueChange = { textFieldValue = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester),
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
                             color = MaterialTheme.colorScheme.onSurface
@@ -192,7 +213,7 @@ fun Omnibar(
                         keyboardActions = KeyboardActions(
                             onGo = {
                                 isEditing = false
-                                val sanitized = TrackingParamStripper.stripTrackingParameters(textInput)
+                                val sanitized = TrackingParamStripper.stripTrackingParameters(textFieldValue.text)
                                 val resolvedBang = SearchBangEngine.resolveBang(sanitized)
                                 onNavigate(resolvedBang ?: sanitized)
                             }
@@ -204,12 +225,7 @@ fun Omnibar(
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (url == "about:blank") MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                isEditing = true
-                                textInput = if (url == "about:blank") "" else url
-                            }
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -243,7 +259,13 @@ fun Omnibar(
             // Reload or Stop / Clear button
             if (isEditing) {
                 IconButton(
-                    onClick = { textInput = "" },
+                    onClick = {
+                        if (textFieldValue.text.isNotEmpty()) {
+                            textFieldValue = TextFieldValue("")
+                        } else {
+                            isEditing = false
+                        }
+                    },
                     modifier = Modifier.size(30.dp)
                 ) {
                     Icon(

@@ -54,14 +54,14 @@ object GeckoManager {
             .contentBlocking(contentBlockingSettings)
             .javaScriptEnabled(true)
             .aboutConfigEnabled(true)
+            .extensionsProcessEnabled(false)
+            .globalPrivacyControlEnabled(true)
+            .webManifest(true)
 
-        // Broadcast Global Privacy Control (GPC) and Do Not Track (DNT)
-        builder.globalPrivacyControl(true)
-
-        // WebRTC Leak Protection & Hardened Preferences
-        builder.webManifest(true)
-
-        val settings = builder.build()
+        val settings = builder.build().apply {
+            setFingerprintingProtection(true)
+            setFingerprintingProtectionPrivateBrowsing(true)
+        }
         val hardenedManager = com.pbmr.browser.core.privacy.HardenedPrivacyManager(context)
         // Apply hardened DoH and anti-fingerprinting profile
         hardenedManager.applyToGeckoSettings(settings, com.pbmr.browser.core.privacy.HardenedPrivacyConfig())

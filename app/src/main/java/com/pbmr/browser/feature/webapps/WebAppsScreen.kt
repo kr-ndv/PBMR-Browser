@@ -87,7 +87,7 @@ fun WebAppsScreen(
                 item {
                     FamilySettingRow(
                         title = app.name,
-                        description = "${app.startUrl}\nProfile: ${app.profileId.capitalize()}",
+                        description = "${app.startUrl}\nProfile: ${app.profileId.replaceFirstChar { it.uppercase() }}",
                         icon = {
                             Box(
                                 modifier = Modifier

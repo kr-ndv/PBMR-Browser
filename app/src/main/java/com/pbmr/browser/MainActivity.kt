@@ -62,6 +62,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var tabGroupManager: TabGroupManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.Theme_PBMRBrowser)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -134,10 +135,10 @@ class MainActivity : ComponentActivity() {
     private fun handleShortcutIntent(intent: android.content.Intent?) {
         when (intent?.action) {
             "com.pbmr.browser.ACTION_NEW_PRIVATE_TAB" -> {
-                sessionManager.createTab(isPrivate = true)
+                sessionManager.createNewTab(isPrivate = true)
             }
             "com.pbmr.browser.ACTION_FIRE_BURN" -> {
-                fireButtonController.burnAndClose()
+                fireButtonController.executeBurn()
             }
         }
     }
@@ -158,6 +159,7 @@ fun MainAppContent(
     isBottomOmnibar: Boolean,
     onBottomOmnibarChange: (Boolean) -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var currentRoute by remember { mutableStateOf("browser") }
     val activeSession by sessionManager.activeSession.collectAsState()
     val activeProfile by profileManager.activeProfile.collectAsState()
@@ -241,7 +243,7 @@ fun MainAppContent(
             "library" -> {
                 LibraryScreen(
                     onNavigateToUrl = { url ->
-                        activeSession?.loadUri(url, sessionManager.activeSession.value?.geckoSession?.context ?: return@LibraryScreen)
+                        activeSession?.loadUri(url, context)
                         currentRoute = "browser"
                     }
                 )
@@ -255,7 +257,10 @@ fun MainAppContent(
                     onAmoledChange = onAmoledChange,
                     isBottomOmnibar = isBottomOmnibar,
                     onBottomOmnibarChange = onBottomOmnibarChange,
-                    tabSleeper = tabSleeper
+                    tabSleeper = tabSleeper,
+                    profileManager = profileManager,
+                    filterListManager = filterListManager,
+                    panicButtonController = panicButtonController
                 )
             }
         }

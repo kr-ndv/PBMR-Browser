@@ -20,11 +20,30 @@ class PBMRApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        if (!isMainProcess()) {
+            // Gecko child processes (e.g. :gpu, :tab0..tab39 isolated services) must NOT
+            // initialize notification channels, disk crash loggers, or the GeckoRuntime singleton.
+            return
+        }
+
         setupCrashHandler()
         createNotificationChannels()
 
         // Initialize Mozilla GeckoRuntime singleton early for optimal startup performance
         GeckoManager.getRuntime(this)
+    }
+
+    private fun isMainProcess(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            getProcessName() == packageName
+        } else {
+            try {
+                val cmdline = File("/proc/self/cmdline").readText().trim().trim(0.toChar())
+                cmdline == packageName
+            } catch (e: Exception) {
+                true
+            }
+        }
     }
 
     private fun createNotificationChannels() {
@@ -46,7 +65,11 @@ class PBMRApplication : Application() {
             }
 
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-            manager?.createNotificationChannels(listOf(downloadChannel, securityChannel))
+            try {
+                manager?.createNotificationChannels(listOf(downloadChannel, securityChannel))
+            } catch (e: Exception) {
+                Log.e("PBMRApplication", "Could not create notification channels", e)
+            }
         }
     }
 

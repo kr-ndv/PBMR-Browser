@@ -5,6 +5,7 @@ import android.app.PictureInPictureParams
 import android.os.Build
 import android.util.Rational
 import org.mozilla.geckoview.GeckoSession
+import org.mozilla.geckoview.MediaSession
 
 /**
  * Manages background media playback and Android Picture-in-Picture (PiP) mode.
@@ -50,22 +51,34 @@ object MediaSessionController {
      * Applies GeckoView media backgrounding properties so playback does not freeze on tab switch.
      */
     fun configureMediaSession(session: GeckoSession) {
-        // In GeckoView, media session delegates can receive playing states
-        session.mediaSessionDelegate = object : GeckoSession.MediaSession.Delegate {
-            override fun onActivated(session: GeckoSession, mediaSession: GeckoSession.MediaSession) {
+        session.mediaSessionDelegate = object : MediaSession.Delegate {
+            override fun onActivated(session: GeckoSession, mediaSession: MediaSession) {
                 isPlayingMedia = true
             }
 
-            override fun onDeactivated(session: GeckoSession, mediaSession: GeckoSession.MediaSession) {
+            override fun onDeactivated(session: GeckoSession, mediaSession: MediaSession) {
                 isPlayingMedia = false
             }
 
-            override fun onPlaybackStateChanged(
+            override fun onPlay(session: GeckoSession, mediaSession: MediaSession) {
+                isPlayingMedia = true
+            }
+
+            override fun onPause(session: GeckoSession, mediaSession: MediaSession) {
+                isPlayingMedia = false
+            }
+
+            override fun onStop(session: GeckoSession, mediaSession: MediaSession) {
+                isPlayingMedia = false
+            }
+
+            override fun onFullscreen(
                 session: GeckoSession,
-                mediaSession: GeckoSession.MediaSession,
-                state: Int
+                mediaSession: MediaSession,
+                fullscreen: Boolean,
+                meta: MediaSession.ElementMetadata?
             ) {
-                isPlayingMedia = (state == GeckoSession.MediaSession.PlaybackState.PLAYING)
+                isVideoFullscreen = fullscreen
             }
         }
     }

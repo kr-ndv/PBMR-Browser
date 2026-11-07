@@ -81,7 +81,7 @@ class OpenSearchManager(private val context: Context) {
                         id = obj.getString("id"),
                         name = obj.getString("name"),
                         searchUrlTemplate = obj.getString("searchUrlTemplate"),
-                        faviconUrl = obj.optString("faviconUrl", null)
+                        faviconUrl = if (obj.has("faviconUrl")) obj.getString("faviconUrl") else null
                     )
                 )
             }

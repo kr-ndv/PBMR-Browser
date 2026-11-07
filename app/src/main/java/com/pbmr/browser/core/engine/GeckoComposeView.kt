@@ -21,20 +21,27 @@ fun GeckoComposeView(
         modifier = modifier.fillMaxSize(),
         factory = { context ->
             GeckoView(context).apply {
-                setSession(session.geckoSession)
+                try {
+                    setSession(session.geckoSession)
+                } catch (e: Exception) {
+                    // Session might already be attached to an earlier instance
+                }
             }
         },
         update = { geckoView ->
             if (geckoView.session != session.geckoSession) {
-                geckoView.releaseSession()
-                geckoView.setSession(session.geckoSession)
+                try {
+                    geckoView.releaseSession()
+                } catch (_: Exception) {}
+                try {
+                    geckoView.setSession(session.geckoSession)
+                } catch (_: Exception) {}
             }
+        },
+        onRelease = { geckoView ->
+            try {
+                geckoView.releaseSession()
+            } catch (_: Exception) {}
         }
     )
-
-    DisposableEffect(session) {
-        onDispose {
-            // No-op or cleanup if needed
-        }
-    }
 }

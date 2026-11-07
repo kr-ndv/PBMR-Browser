@@ -90,13 +90,14 @@ fun BrowserScreen(
                     .fillMaxWidth()
                     .weight(1f)
             ) {
+                // Permanently mount GeckoComposeView so session is attached and ready
+                GeckoComposeView(session = session)
+
                 if (url == "about:blank" || url.isEmpty()) {
                     StartPageScreen(
                         onSearch = { query -> session.loadUri(query, context) },
                         onOpenSpeedDial = { speedDialUrl -> session.loadUri(speedDialUrl, context) }
                     )
-                } else {
-                    GeckoComposeView(session = session)
                 }
             }
 

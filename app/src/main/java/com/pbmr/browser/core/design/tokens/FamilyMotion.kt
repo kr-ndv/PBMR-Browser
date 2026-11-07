@@ -27,6 +27,11 @@ object FamilyMotion {
         dampingRatio = 0.65f
     )
 
+    val tabSwitchDpSpring = spring<androidx.compose.ui.unit.Dp>(
+        stiffness = 340f,
+        dampingRatio = 0.65f
+    )
+
     // press: stiffness 420, damping 28
     val pressSpring = spring<Float>(
         stiffness = 420f,

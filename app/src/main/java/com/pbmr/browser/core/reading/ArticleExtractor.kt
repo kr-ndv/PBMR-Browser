@@ -16,23 +16,38 @@ object ArticleExtractor {
 
     fun extractFromHtml(rawHtml: String, pageUrl: String, pageTitle: String): ArticleContent {
         val domain = extractDomain(pageUrl)
-        // Extract paragraphs or fallback to cleaned lines
-        val lines = rawHtml
-            .replace(Regex("<script[\\s\\S]*?</script>"), "")
-            .replace(Regex("<style[\\s\\S]*?</style>"), "")
-            .replace(Regex("<nav[\\s\\S]*?</nav>"), "")
-            .replace(Regex("<header[\\s\\S]*?</header>"), "")
-            .replace(Regex("<footer[\\s\\S]*?</footer>"), "")
-            .split(Regex("<p[^>]*>"))
-            .map { it.replace(Regex("<[^>]*>"), "").trim() }
-            .filter { it.length > 40 }
+        
+        // Strip out scripts, styles, navigation, headers, footers
+        val cleaned = rawHtml
+            .replace(Regex("<script[\\s\\S]*?</script>", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("<style[\\s\\S]*?</style>", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("<nav[\\s\\S]*?</nav>", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("<header[\\s\\S]*?</header>", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("<footer[\\s\\S]*?</footer>", RegexOption.IGNORE_CASE), "")
 
-        val paragraphs = if (lines.isNotEmpty()) lines else listOf(
-            "This article has been formatted for distraction-free reading by PBMR-Browser.",
-            "All advertisements, tracking scripts, and unwanted page clutter have been stripped away so you can focus on the text."
-        )
+        // Extract <p>...</p> content
+        val pTags = Regex("<p[^>]*>([\\s\\S]*?)</p>", RegexOption.IGNORE_CASE)
+            .findAll(cleaned)
+            .map { it.groupValues[1].replace(Regex("<[^>]*>"), "").trim() }
+            .filter { it.length > 20 }
+            .toList()
 
-        val wordCount = paragraphs.sumOf { it.split(" ").size }
+        val paragraphs = if (pTags.isNotEmpty()) {
+            pTags
+        } else {
+            cleaned
+                .split("\n")
+                .map { it.replace(Regex("<[^>]*>"), "").trim() }
+                .filter { it.length > 40 }
+                .ifEmpty {
+                    listOf(
+                        "This article has been formatted for distraction-free reading by PBMR-Browser.",
+                        "All advertisements, tracking scripts, and unwanted page clutter have been stripped away so you can focus on the text."
+                    )
+                }
+        }
+
+        val wordCount = paragraphs.sumOf { it.split("\\s+".toRegex()).size }
         val readTime = (wordCount / 200).coerceAtLeast(1)
 
         return ArticleContent(

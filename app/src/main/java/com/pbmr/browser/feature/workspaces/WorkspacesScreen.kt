@@ -11,9 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Dashboard
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Workspaces
 import androidx.compose.material3.Icon
@@ -102,7 +102,7 @@ fun WorkspacesScreen(
                             ) {
                                 Icon(
                                     imageVector = when (workspace.iconName) {
-                                        "MenuBook" -> Icons.Default.MenuBook
+                                        "MenuBook" -> Icons.AutoMirrored.Filled.MenuBook
                                         "PlayCircle" -> Icons.Default.PlayCircle
                                         else -> Icons.Default.Dashboard
                                     },

@@ -125,6 +125,94 @@ fun FamilyDialog(
 }
 
 /**
+ * PBMR App Family Dialog with customizable content slot.
+ */
+@Composable
+fun FamilyDialog(
+    onDismissRequest: () -> Unit,
+    title: String,
+    modifier: Modifier = Modifier,
+    icon: (@Composable () -> Unit)? = null,
+    confirmButtonText: String = "Confirm",
+    onConfirm: () -> Unit,
+    dismissButtonText: String? = "Cancel",
+    onDismiss: (() -> Unit)? = onDismissRequest,
+    isDestructive: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Dialog(onDismissRequest = onDismissRequest) {
+        Column(
+            modifier = modifier
+                .widthIn(max = 420.dp)
+                .fillMaxWidth()
+                .clip(FamilyRadii.ExpressiveModal)
+                .background(MaterialTheme.colorScheme.surface)
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                    shape = FamilyRadii.ExpressiveModal
+                )
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (icon != null) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(FamilyRadii.Large)
+                        .background(
+                            if (isDestructive) MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
+                            else MaterialTheme.colorScheme.primaryContainer
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    icon()
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            content()
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (dismissButtonText != null && onDismiss != null) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = FamilyRadii.ExtraLarge
+                    ) {
+                        Text(dismissButtonText)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                }
+
+                Button(
+                    onClick = onConfirm,
+                    shape = FamilyRadii.ExtraLarge,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(confirmButtonText)
+                }
+            }
+        }
+    }
+}
+
+/**
  * PBMR App Family Bottom Sheet
  * 32dp top-rounded modal sheet.
  */

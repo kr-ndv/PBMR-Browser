@@ -82,7 +82,12 @@ class BrowserSession(
         }
 
         geckoSession.navigationDelegate = object : GeckoSession.NavigationDelegate {
-            override fun onLocationChange(session: GeckoSession, url: String?, perms: MutableList<GeckoSession.PermissionDelegate.ContentPermission>?) {
+            override fun onLocationChange(
+                session: GeckoSession,
+                url: String?,
+                perms: List<GeckoSession.PermissionDelegate.ContentPermission>,
+                hasUserGesture: Boolean
+            ) {
                 if (url != null) {
                     _url.value = url
                 }
@@ -102,6 +107,26 @@ class BrowserSession(
                 _blockedTrackerCount.value += 1
             }
         }
+
+        geckoSession.contentDelegate = object : GeckoSession.ContentDelegate {
+            override fun onTitleChange(session: GeckoSession, title: String?) {
+                if (!title.isNullOrBlank()) {
+                    _title.value = title
+                }
+            }
+
+            override fun onCrash(session: GeckoSession) {
+                try {
+                    session.reload()
+                } catch (_: Exception) {}
+            }
+
+            override fun onKill(session: GeckoSession) {
+                try {
+                    session.reload()
+                } catch (_: Exception) {}
+            }
+        }
     }
 
     fun open(runtimeContext: Context) {
@@ -116,6 +141,9 @@ class BrowserSession(
     fun loadUri(uri: String, context: Context) {
         open(context)
         val formattedUri = formatInputUri(uri)
+        _url.value = formattedUri
+        _isLoading.value = true
+        _progress.value = 0.15f
         geckoSession.loadUri(formattedUri)
     }
 

@@ -1,8 +1,10 @@
 package com.pbmr.browser.feature.tabs
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,13 +27,16 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Nightlight
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +45,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.pbmr.browser.core.design.components.FamilyDialog
 import com.pbmr.browser.core.design.components.MotionPressable
@@ -46,11 +55,19 @@ import com.pbmr.browser.core.design.theme.FamilyRadii
 import com.pbmr.browser.core.engine.BrowserSession
 import com.pbmr.browser.core.engine.SessionManager
 import com.pbmr.browser.core.privacy.FireButtonController
+import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
+
+data class RestorableTab(
+    val url: String,
+    val title: String,
+    val isPrivate: Boolean
+)
 
 /**
  * Tabs Overview Screen
- * Displays visual card grid of active tabs, private tabs toggle, sleeping indicators,
- * and the DuckDuckGo-inspired Fire Button.
+ * Displays visual card grid of active tabs with swipe-to-close gesture,
+ * undo closed tab snackbar, standard/private toggle, and Fire Burn button.
  */
 @Composable
 fun TabsScreen(
@@ -64,6 +81,26 @@ fun TabsScreen(
     val isPrivateMode by sessionManager.isPrivateMode.collectAsState()
 
     var showFireDialog by remember { mutableStateOf(false) }
+    var lastClosedTab by remember { mutableStateOf<RestorableTab?>(null) }
+    var showUndoSnackbar by remember { mutableStateOf(false) }
+
+    // Auto-dismiss undo notification after 5 seconds
+    LaunchedEffect(showUndoSnackbar) {
+        if (showUndoSnackbar) {
+            delay(5000)
+            showUndoSnackbar = false
+        }
+    }
+
+    fun handleCloseTab(tab: BrowserSession) {
+        lastClosedTab = RestorableTab(
+            url = tab.url.value,
+            title = if (tab.url.value == "about:blank") "New Tab" else tab.title.value,
+            isPrivate = tab.isPrivate
+        )
+        showUndoSnackbar = true
+        sessionManager.closeTab(tab)
+    }
 
     val filteredTabs = tabs.filter { it.isPrivate == isPrivateMode }
 
@@ -159,7 +196,7 @@ fun TabsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Tabs Grid
+        // Tabs Grid with Swipe to Dismiss on Cards
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier
@@ -170,107 +207,87 @@ fun TabsScreen(
         ) {
             items(filteredTabs, key = { it.id }) { tab ->
                 val isSelected = tab == activeSession
-                val tabUrl by tab.url.collectAsState()
-                val tabTitle by tab.title.collectAsState()
-                val isSuspended by tab.isSuspended.collectAsState()
-
-                MotionPressable(
-                    onClick = {
+                TabSwipeCard(
+                    tab = tab,
+                    isSelected = isSelected,
+                    onSelect = {
                         sessionManager.selectTab(tab)
                         onTabSelected()
-                    }
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(170.dp)
-                            .clip(FamilyRadii.GroupedCard)
-                            .background(MaterialTheme.colorScheme.surface)
-                            .border(
-                                width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                                shape = FamilyRadii.GroupedCard
-                            )
-                            .padding(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                modifier = Modifier.weight(1f),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Public,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = if (tabUrl == "about:blank") "New Tab" else tabTitle,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1
-                                )
-                            }
+                    },
+                    onClose = { handleCloseTab(tab) }
+                )
+            }
+        }
 
-                            IconButton(
-                                onClick = { sessionManager.closeTab(tab) },
-                                modifier = Modifier.size(24.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Close Tab",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(16.dp)
+        // Floating Undo Closed Tab Snackbar
+        if (showUndoSnackbar && lastClosedTab != null) {
+            val tabToRestore = lastClosedTab!!
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(FamilyRadii.GroupedCard)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        shape = FamilyRadii.GroupedCard
+                    )
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Undo,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Closed \"${tabToRestore.title.take(15)}\"",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1
+                        )
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(
+                            onClick = {
+                                val newSession = sessionManager.createNewTab(
+                                    url = tabToRestore.url,
+                                    isPrivate = tabToRestore.isPrivate
                                 )
+                                sessionManager.selectTab(newSession)
+                                lastClosedTab = null
+                                showUndoSnackbar = false
                             }
+                        ) {
+                            Text(
+                                text = "Undo",
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Preview Box
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .clip(FamilyRadii.Medium)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
+                        IconButton(
+                            onClick = { showUndoSnackbar = false },
+                            modifier = Modifier.size(24.dp)
                         ) {
-                            if (isSuspended) {
-                                Row(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surface)
-                                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Nightlight,
-                                        contentDescription = "Sleeping",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "Sleeping (RAM Saved)",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            } else {
-                                Text(
-                                    text = if (tabUrl == "about:blank") "Start Page" else tabUrl,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 2,
-                                    modifier = Modifier.padding(8.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Dismiss",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(14.dp)
+                            )
                         }
                     }
                 }
@@ -326,5 +343,141 @@ fun TabsScreen(
             },
             onDismissRequest = { showFireDialog = false }
         )
+    }
+}
+
+/**
+ * Tab card supporting horizontal swipe to dismiss as well as close button.
+ */
+@Composable
+private fun TabSwipeCard(
+    tab: BrowserSession,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+    onClose: () -> Unit
+) {
+    var offsetX by remember { mutableStateOf(0f) }
+    val animatedOffsetX by animateFloatAsState(targetValue = offsetX, label = "tab_offset")
+
+    val tabUrl by tab.url.collectAsState()
+    val tabTitle by tab.title.collectAsState()
+    val isSuspended by tab.isSuspended.collectAsState()
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .offset { IntOffset(animatedOffsetX.roundToInt(), 0) }
+            .pointerInput(tab.id) {
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        if (kotlin.math.abs(offsetX) > 150f) {
+                            onClose()
+                        } else {
+                            offsetX = 0f
+                        }
+                    },
+                    onHorizontalDrag = { _, dragAmount ->
+                        offsetX += dragAmount
+                    }
+                )
+            }
+    ) {
+        MotionPressable(
+            onClick = onSelect
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(170.dp)
+                    .clip(FamilyRadii.GroupedCard)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(
+                        width = if (isSelected) 2.dp else 1.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                        shape = FamilyRadii.GroupedCard
+                    )
+                    .padding(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Public,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (tabUrl == "about:blank") "New Tab" else tabTitle,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onClose,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close Tab",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Preview Box
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .clip(FamilyRadii.Medium)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSuspended) {
+                        Row(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surface)
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Nightlight,
+                                contentDescription = "Sleeping",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Sleeping (RAM Saved)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = if (tabUrl == "about:blank") "Start Page" else tabUrl,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                }
+            }
+        }
     }
 }

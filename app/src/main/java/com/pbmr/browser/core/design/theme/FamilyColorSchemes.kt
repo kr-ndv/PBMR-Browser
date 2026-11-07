@@ -9,6 +9,8 @@ import androidx.compose.ui.graphics.Color
  * PBMR (Project Buck Moon Rise) App Family Color Schemes
  * Signature: Forest/Lime
  * Plus 12 presets and AMOLED black support.
+ * The selected Accent Palette comprehensively shapes the entire color atmosphere
+ * of the app (backgrounds, surfaces, cards, containers, borders, and text).
  */
 
 // --- Forest / Lime Signature Tokens ---
@@ -60,51 +62,81 @@ enum class FamilyAccent(val displayName: String, val lightPrimary: Color, val da
     CRIMSON("Crimson", Color(0xFFA42D3A), Color(0xFFFFB3B8), Color(0xFFFFDADB))
 }
 
+/**
+ * Linearly blends an overlay color into a base neutral tone by a specified ratio.
+ */
+private fun blendColors(base: Color, overlay: Color, ratio: Float): Color {
+    val r = base.red * (1f - ratio) + overlay.red * ratio
+    val g = base.green * (1f - ratio) + overlay.green * ratio
+    val b = base.blue * (1f - ratio) + overlay.blue * ratio
+    return Color(red = r, green = g, blue = b, alpha = 1.0f)
+}
+
 fun createFamilyColorScheme(
     accent: FamilyAccent = FamilyAccent.FOREST,
     darkTheme: Boolean = false,
     amoled: Boolean = false
 ): ColorScheme {
     return if (darkTheme) {
-        val bg = if (amoled) Color(0xFF000000) else ForestBackgroundDark
-        val surface = if (amoled) Color(0xFF0A0F0C) else ForestSurfaceDark
-        val surfaceElevated = if (amoled) Color(0xFF121B15) else ForestSurfaceElevatedDark
+        val accentDark = accent.darkPrimary
+        val accentSec = accent.secondary
+
+        val bg = if (amoled) Color(0xFF000000) else blendColors(Color(0xFF0A0C0E), accentDark, 0.06f)
+        val surface = if (amoled) blendColors(Color(0xFF050708), accentDark, 0.08f) else blendColors(Color(0xFF101317), accentDark, 0.12f)
+        val surfaceVariant = blendColors(Color(0xFF171B20), accentDark, 0.16f)
+        val primaryContainer = blendColors(Color(0xFF1D2228), accentDark, 0.24f)
+        val secondaryContainer = blendColors(Color(0xFF1A1F24), accentSec, 0.20f)
+        val outline = blendColors(Color(0xFF283038), accentDark, 0.30f)
+        val onSurface = blendColors(Color(0xFFF2F4F7), accentSec, 0.08f)
+        val onSurfaceVariant = blendColors(Color(0xFFA6B0BC), accentSec, 0.12f)
 
         darkColorScheme(
-            primary = accent.darkPrimary,
-            onPrimary = ForestOnPrimaryDark,
-            primaryContainer = ForestPrimaryContainerDark,
-            onPrimaryContainer = accent.secondary,
-            secondary = accent.secondary,
-            onSecondary = ForestOnPrimaryDark,
-            secondaryContainer = ForestSecondaryContainerDark,
-            onSecondaryContainer = ForestOnSurfaceDark,
+            primary = accentDark,
+            onPrimary = Color(0xFF0A120E),
+            primaryContainer = primaryContainer,
+            onPrimaryContainer = accentSec,
+            secondary = accentSec,
+            onSecondary = Color(0xFF0A120E),
+            secondaryContainer = secondaryContainer,
+            onSecondaryContainer = onSurface,
             background = bg,
-            onBackground = ForestOnSurfaceDark,
+            onBackground = onSurface,
             surface = surface,
-            onSurface = ForestOnSurfaceDark,
-            surfaceVariant = ForestSurfaceVariantDark,
-            onSurfaceVariant = ForestOnSurfaceVariantDark,
-            outline = ForestOutlineDark,
+            onSurface = onSurface,
+            surfaceVariant = surfaceVariant,
+            onSurfaceVariant = onSurfaceVariant,
+            outline = outline,
             error = SemanticDangerDark
         )
     } else {
+        val accentLight = accent.lightPrimary
+        val accentSec = accent.secondary
+
+        val bg = blendColors(Color(0xFFF8F9FA), accentLight, 0.04f)
+        val surface = Color(0xFFFFFFFF)
+        val surfaceVariant = blendColors(Color(0xFFEDF1F5), accentLight, 0.08f)
+        val primaryContainer = blendColors(Color(0xFFE2E8EE), accentLight, 0.22f)
+        val secondaryContainer = blendColors(Color(0xFFE6ECF2), accentSec, 0.20f)
+        val outline = blendColors(Color(0xFFD0D7DE), accentLight, 0.25f)
+        val onSurface = blendColors(Color(0xFF121518), accentLight, 0.08f)
+        val onSurfaceVariant = blendColors(Color(0xFF5A636E), accentLight, 0.12f)
+
         lightColorScheme(
-            primary = accent.lightPrimary,
-            onPrimary = ForestOnPrimaryLight,
-            primaryContainer = ForestPrimaryContainerLight,
-            onPrimaryContainer = accent.lightPrimary,
-            secondary = accent.secondary,
-            onSecondary = ForestOnSurfaceLight,
-            secondaryContainer = ForestSecondaryContainerLight,
-            onSecondaryContainer = ForestOnSurfaceLight,
-            background = ForestBackgroundLight,
-            onBackground = ForestOnSurfaceLight,
-            surface = ForestSurfaceLight,
-            onSurface = ForestOnSurfaceLight,
-            surfaceVariant = ForestSurfaceVariantLight,
-            onSurfaceVariant = ForestOnSurfaceVariantLight,
-            outline = ForestOutlineLight,
+            primary = accentLight,
+            onPrimary = Color(0xFFFFFFFF),
+            primaryContainer = primaryContainer,
+            onPrimaryContainer = accentLight,
+            secondary = accentSec,
+            onSecondary = Color(0xFF121518),
+            secondaryContainer = secondaryContainer,
+            onSecondaryContainer = onSurface,
+            background = bg,
+            onBackground = onSurface,
+            surface = surface,
+            onSurface = onSurface,
+            surfaceVariant = surfaceVariant,
+            onSurfaceVariant = onSurfaceVariant,
+            outline = outline,
             error = SemanticDangerLight
         )
     }
